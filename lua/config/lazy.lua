@@ -15,8 +15,8 @@ require("lazy").setup({
       import = "lazyvim.plugins",
       opts = {
         -- colorscheme = "solarized-osaka",
-        -- colorscheme = "tokyonight-moon",
-        colorscheme = "catppuccin-mocha",
+        colorscheme = "tokyonight-moon",
+        -- colorscheme = "catppuccin-mocha",
         -- colorscheme = "rose-pine",
       },
     },
