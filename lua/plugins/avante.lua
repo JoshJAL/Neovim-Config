@@ -1,58 +1,85 @@
+local function patch_openai_response_tool_outputs()
+  local ok, Providers = pcall(require, "avante.providers")
+  if not ok then
+    return
+  end
+
+  local ok_openai, openai = pcall(function()
+    return Providers.openai
+  end)
+  if not ok_openai or openai._terra_response_tool_output_patch then
+    return
+  end
+
+  openai._terra_response_tool_output_patch = true
+
+  local parse_curl_args = openai.parse_curl_args
+  openai.parse_curl_args = function(self, prompt_opts)
+    self.last_response_id = nil
+    local args = parse_curl_args(self, prompt_opts)
+    local input = args and args.body and args.body.input
+    if type(input) ~= "table" then
+      return args
+    end
+
+    local calls = {}
+    local outputs = {}
+    for _, item in ipairs(input) do
+      if item.type == "function_call" and item.call_id then
+        calls[item.call_id] = true
+      elseif item.type == "function_call_output" and item.call_id then
+        outputs[item.call_id] = true
+      end
+    end
+
+    local filtered = {}
+    for _, item in ipairs(input) do
+      local keep = true
+      if item.type == "function_call" then
+        keep = item.call_id and outputs[item.call_id]
+      elseif item.type == "function_call_output" then
+        keep = item.call_id and calls[item.call_id]
+      end
+      if keep then
+        table.insert(filtered, item)
+      end
+    end
+    args.body.input = filtered
+
+    return args
+  end
+end
+
 return {
-  "yetone/avante.nvim",
-  event = "VeryLazy",
-  version = false, -- Never set this value to "*"! Never!
-  opts = {
-    -- add any opts here
-    -- for example
-    provider = "claude",
-    providers = {
-      calude = {
-        endpoint = "https://api.anthropic.com",
-        model = "claude-3-7-sonnet-latest",
+  {
+    "yetone/avante.nvim",
+    keys = {
+      {
+        "<leader>ae",
+        function()
+          require("avante.api").edit()
+        end,
+        mode = "v",
+        desc = "Edit selected block with Avante",
       },
     },
-  },
-  -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
-  build = "make",
-  -- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
-  dependencies = {
-    "nvim-treesitter/nvim-treesitter",
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    --- The below dependencies are optional,
-    "echasnovski/mini.pick", -- for file_selector provider mini.pick
-    "nvim-telescope/telescope.nvim", -- for file_selector provider telescope
-    "hrsh7th/nvim-cmp", -- autocompletion for avante commands and mentions
-    "ibhagwan/fzf-lua", -- for file_selector provider fzf
-    "stevearc/dressing.nvim", -- for input provider dressing
-    "folke/snacks.nvim", -- for input provider snacks
-    "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
-    "zbirenbaum/copilot.lua", -- for providers='copilot'
-    {
-      -- support for image pasting
-      "HakonHarnes/img-clip.nvim",
-      event = "VeryLazy",
-      opts = {
-        -- recommended settings
-        default = {
-          embed_image_as_base64 = false,
-          prompt_for_file_name = false,
-          drag_and_drop = {
-            insert_mode = true,
+    opts = {
+      provider = "openai",
+      providers = {
+        openai = {
+          model = "gpt-5.6-terra",
+          use_response_api = true,
+          support_previous_response_id = false,
+          extra_request_body = {
+            reasoning_effort = "high",
+            max_completion_tokens = 16384,
           },
-          -- required for Windows users
-          use_absolute_path = true,
         },
       },
     },
-    {
-      -- Make sure to set this up properly if you have lazy=true
-      "MeanderingProgrammer/render-markdown.nvim",
-      opts = {
-        file_types = { "markdown", "Avante" },
-      },
-      ft = { "markdown", "Avante" },
-    },
+    config = function(_, opts)
+      require("avante").setup(opts)
+      patch_openai_response_tool_outputs()
+    end,
   },
 }
