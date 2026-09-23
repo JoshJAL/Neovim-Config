@@ -4,3 +4,7 @@ require("config.remote_clipboard").setup()
 -- Add any additional options here
 vim.opt.relativenumber = false
 vim.o.guifont = "Dank Mono:h14"
+
+local opt = vim.opt
+
+opt.wrap = true

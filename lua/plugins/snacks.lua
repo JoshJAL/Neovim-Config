@@ -1,6 +1,12 @@
 return {
   "folke/snacks.nvim",
   opts = {
+    bigfile = {
+      -- snacks derives "average line length" as bytes/lines, so a minified
+      -- JSON on a single line trips this no matter how small the file is.
+      -- The size check above still catches genuinely large files.
+      line_length = 100000,
+    },
     picker = {
       ignored = true, -- show .gitignored files in all pickers by default
       sources = {
