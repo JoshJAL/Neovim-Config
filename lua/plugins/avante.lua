@@ -62,6 +62,11 @@ return {
         mode = "v",
         desc = "Edit selected block with Avante",
       },
+      {
+        "<leader>ap",
+        "<cmd>AvanteSwitchProvider<cr>",
+        desc = "Switch Avante provider",
+      },
     },
     opts = {
       provider = "openai",
@@ -73,6 +78,13 @@ return {
           extra_request_body = {
             reasoning_effort = "high",
             max_completion_tokens = 16384,
+          },
+        },
+        claude = {
+          model = "claude-sonnet-4-20250514",
+          timeout = 30000,
+          extra_request_body = {
+            max_tokens = 16384,
           },
         },
       },
