@@ -53,6 +53,9 @@ end
 return {
   {
     "yetone/avante.nvim",
+    dependencies = {
+      { "ColinKennedy/mega.cmdparse", dependencies = { "ColinKennedy/mega.logging" } },
+    },
     keys = {
       {
         "<leader>ae",
